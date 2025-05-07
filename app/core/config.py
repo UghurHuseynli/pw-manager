@@ -38,5 +38,9 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
 
+    FIRST_SUPERUSER_USERNAME: str
+    FIRST_SUPERUSER_EMAIL: str
+    FIRST_SUPERUSER_PASSWORD: str
+
 
 settings = Settings()
