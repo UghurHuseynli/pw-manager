@@ -44,8 +44,8 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashes_password: str
-    created_at: datetime = Field(default_factory=timezone.utc)
-    updated_at: datetime = Field(default_factory=timezone.utc)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     credentials: list["Credentials"] = Relationship(back_populates="user")
 
 
@@ -54,6 +54,12 @@ class UserPublic(SQLModel):
     username: str
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = Field(default=False)
+
+
+class UserSignUpResponse(UserPublic):
+    message: str = Field(
+        default="User created successfully and sending activation email. Please check your inbox."
+    )
 
 
 from app.db.credentials import Credentials
