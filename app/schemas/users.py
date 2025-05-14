@@ -43,3 +43,10 @@ class NewPassword(BaseModel):
     new_password: str = Field(
         min_length=8, max_length=40, description="New password for the user."
     )
+
+
+class ChangePassword(BaseModel):
+    """Scheme for change password"""
+
+    old_password: str
+    new_password: str

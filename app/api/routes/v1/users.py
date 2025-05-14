@@ -6,15 +6,19 @@ from app.db.users import (
     UserPublic,
     UserCreate,
     UserUpdate,
+    UserUpdateMe,
     UserRegister,
     UserSignUpResponse,
 )
+from app.schemas.users import Message, ChangePassword
 from app.crud import users as crud_users
 from app.api.dependencies import SessionDep, CurrentUser
+from app.core.security import verify_password, get_password_hash
 from app.utils import (
     generate_reset_token,
     generate_new_account_activate_email,
     send_email,
+    verify_reset_token,
 )
 from app.core.config import settings
 
@@ -52,9 +56,81 @@ def create_user(
     return user
 
 
+@router.post("/activate", response_model=UserPublic)
+def activate_user(*, session: SessionDep, token: str) -> Any:
+    email = verify_reset_token(token=token)
+    if not email:
+        raise HTTPException(
+            status=400,
+            detail="Invalid token. Please request a new password recovery email.",
+        )
+    user = crud_users.get_user_by_email(session=session, email=email)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this email does not exist in the system.",
+        )
+    user.is_active = True
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
 @router.get("/me", response_model=UserPublic)
-def read_user_me(*, current_user: CurrentUser) -> Any:
+def read_user(*, current_user: CurrentUser) -> Any:
     """Get current user."""
     return current_user
 
 
+@router.post("/change-password", response_model=Message)
+def change_password(
+    *, session: SessionDep, payload: ChangePassword, current_user: CurrentUser
+):
+    """Change own password"""
+
+    if not verify_password(payload.old_password, current_user.hashes_password):
+        raise HTTPException(
+            status_code=400, detail={"old_password": "Password is not matched"}
+        )
+
+    current_user.hashes_password = get_password_hash(payload.new_password)
+    session.add(current_user)
+    session.commit()
+    return Message(message="Password changed successfully")
+
+
+@router.patch("/me", response_model=UserPublic)
+def update_user(
+    *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
+) -> Any:
+    """Update own user"""
+
+    if user_in.email:
+        existing_user = crud_users.get_user_by_email(
+            session=session, email=user_in.email
+        )
+        if existing_user and existing_user.id != current_user.id:
+            raise HTTPException(
+                status_code=409, detail="User with this email already exists"
+            )
+    user_data = user_in.model_dump(exclude_unset=True)
+    current_user.sqlmodel_update(user_data)
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    return current_user
+
+
+@router.delete("/me", response_model=Message)
+def delete_user(*, session: SessionDep, current_user: CurrentUser) -> Any:
+    """Delete own user"""
+
+    if current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="Super users are not allowed to delete themselves"
+        )
+    session.delete(current_user)
+    session.commit()
+
+    return Message(message="User deleted successfully")
