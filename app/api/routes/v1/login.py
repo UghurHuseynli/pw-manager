@@ -56,7 +56,7 @@ def password_recovery(
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
     )
-    background_tasks(
+    background_tasks.add_task(
         send_email,
         email_to=user.email,
         subject=email_data.subject,
