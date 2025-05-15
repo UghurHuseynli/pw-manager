@@ -21,12 +21,13 @@ class UserRegister(SQLModel):
     password: str = Field(min_length=8, max_length=40)
 
 
-class UserUpdate(UserBase):
+class UserUpdate(SQLModel):
     username: str | None = Field(default=None)
     email: EmailStr | None = Field(
         default=None, unique=True, index=True, max_length=255
     )
-    password: str | None = Field(default=None, min_length=8, max_length=40)
+    is_active: bool | None
+    is_superuser: bool | None
 
 
 class UserUpdateMe(SQLModel):
@@ -54,6 +55,15 @@ class UserPublic(SQLModel):
     username: str
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = Field(default=False)
+
+
+class UsersPublic(SQLModel):
+    data: list[UserPublic]
+    count: int
+
+
+class AdminPublic(UserBase):
+    id: uuid.UUID
 
 
 class UserSignUpResponse(UserPublic):

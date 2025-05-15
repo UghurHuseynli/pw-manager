@@ -83,7 +83,7 @@ def read_user(*, current_user: CurrentUser) -> Any:
     return current_user
 
 
-@router.post("/change-password", response_model=Message)
+@router.post("/me/change-password", response_model=Message)
 def change_password(
     *, session: SessionDep, payload: ChangePassword, current_user: CurrentUser
 ):
