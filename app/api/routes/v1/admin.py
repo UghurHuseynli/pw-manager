@@ -106,7 +106,7 @@ def change_password(
             status_code=403, detail="Use the personal password-change endpoint."
         )
 
-    user.hashes_password = get_password_hash(payload.new_password)
+    user.hashed_password = get_password_hash(payload.new_password)
     session.add(user)
     user.commit()
 

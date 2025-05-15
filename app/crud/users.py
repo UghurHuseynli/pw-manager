@@ -7,7 +7,7 @@ from app.core.security import get_password_hash, verify_password
 def create_user(*, session: Session, user_create: UserCreate) -> User:
     db_obj = User.model_validate(
         user_create,
-        update={"hashes_password": get_password_hash(user_create.password)},
+        update={"hashed_password": get_password_hash(user_create.password)},
     )
     session.add(db_obj)
     session.commit()
@@ -25,6 +25,6 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     user = get_user_by_email(session=session, email=email)
     if not user:
         return None
-    if not verify_password(password, user.hashes_password):
+    if not verify_password(password, user.hashed_password):
         return None
     return user
