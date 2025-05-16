@@ -84,6 +84,6 @@ def password_reset(session: SessionDep, body: NewPassword) -> Message:
         raise HTTPException(status_code=400, detail="Inactive user")
 
     hashed_password = get_password_hash(body.new_password)
-    user.hashes_password = hashed_password
+    user.hashed_password = hashed_password
     session.commit()
     return Message(message="Password updated successfully.")

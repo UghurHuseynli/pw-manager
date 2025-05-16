@@ -89,12 +89,12 @@ def change_password(
 ):
     """Change own password"""
 
-    if not verify_password(payload.old_password, current_user.hashes_password):
+    if not verify_password(payload.old_password, current_user.hashed_password):
         raise HTTPException(
             status_code=400, detail={"old_password": "Password is not matched"}
         )
 
-    current_user.hashes_password = get_password_hash(payload.new_password)
+    current_user.hashed_password = get_password_hash(payload.new_password)
     session.add(current_user)
     session.commit()
     return Message(message="Password changed successfully")

@@ -47,7 +47,7 @@ def read_user(*, session: SessionDep, user_id: UUID) -> Any:
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """Create New Users"""
 
-    user = crud_users.get_user_by_email(user_in.email)
+    user = crud_users.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
             status_code=400,
@@ -106,7 +106,7 @@ def change_password(
             status_code=403, detail="Use the personal password-change endpoint."
         )
 
-    user.hashes_password = get_password_hash(payload.new_password)
+    user.hashed_password = get_password_hash(payload.new_password)
     session.add(user)
     user.commit()
 
