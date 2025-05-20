@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_EMAIL: str
     FIRST_SUPERUSER_PASSWORD: str
 
+    TEST_USER_EMAIL: str
+
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     SMTP_PORT: int = 587
