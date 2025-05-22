@@ -20,6 +20,28 @@ def test_create_user(db: Session) -> None:
     user = crud_users.create_user(session=db, user_create=user_in)
     assert user.email == email
     assert user.username == username
+    assert user.is_active is False
+    assert user.is_superuser is False
+    assert hasattr(user, "hashed_password")
+
+
+def test_create_admin_user(db: Session) -> None:
+    email = random_email()
+    password = random_lower_string()
+    username = random_lower_string()
+
+    user_in = UserCreate(
+        username=username,
+        email=email,
+        password=password,
+        is_active=True,
+        is_superuser=True,
+    )
+    user = crud_users.create_user(session=db, user_create=user_in)
+    assert user.email == email
+    assert user.username == username
+    assert user.is_active is True
+    assert user.is_superuser is True
     assert hasattr(user, "hashed_password")
 
 
@@ -65,20 +87,6 @@ def test_user_is_active(db: Session) -> None:
     )
     user = crud_users.create_user(session=db, user_create=user_in)
     assert user.is_active
-
-
-def test_user_is_inactive(db: Session) -> None:
-    email = random_email()
-    password = random_lower_string()
-    username = random_lower_string()
-
-    user_in = UserCreate(
-        username=username,
-        email=email,
-        password=password,
-    )
-    user = crud_users.create_user(session=db, user_create=user_in)
-    assert user.is_active is False
 
 
 def test_get_user(db: Session) -> None:

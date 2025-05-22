@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str
 
     TEST_USER_EMAIL: str
+    TEST_USER_PASSWORD: str
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False

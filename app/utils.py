@@ -86,16 +86,7 @@ def generate_reset_password_email(
         template_name="reset_password.html",
         project_name=project_name,
     )
-    # html_content = render_email_template(
-    #     template_name="reset_password.html",
-    #     context={
-    #         "project_name": project_name,
-    #         "username": email,
-    #         "link": link,
-    #         "email": email_to,
-    #         "valid_hours": settings.EMAIL_TOKEN_EXPIRE_HOURS,
-    #     },
-    # )
+
     return EmailData(subject=subject, html_content=html_content)
 
 
@@ -113,16 +104,7 @@ def generate_new_account_activate_email(
         template_name="new_account_activate.html",
         project_name=project_name,
     )
-    # html_content = render_email_template(
-    #     template_name="new_account_activate.html",
-    #     context={
-    #         "project_name": project_name,
-    #         "username": email,
-    #         "link": link,
-    #         "email": email_to,
-    #         "valid_hours": settings.EMAIL_TOKEN_EXPIRE_HOURS,
-    #     },
-    # )
+
     return EmailData(subject=subject, html_content=html_content)
 
 

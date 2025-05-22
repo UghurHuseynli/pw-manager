@@ -64,6 +64,8 @@ class UsersPublic(SQLModel):
 
 class AdminPublic(UserBase):
     id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
 
 
 class UserSignUpResponse(UserPublic):
