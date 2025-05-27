@@ -21,12 +21,13 @@ from app.utils import (
     verify_reset_token,
 )
 from app.core.config import settings
+from app.crud.base import save_to_db
 
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/signup", response_model=UserSignUpResponse)
+@router.post("/signup", response_model=UserSignUpResponse, status_code=201)
 def create_user(
     *, session: SessionDep, user_in: UserRegister, background_tasks: BackgroundTasks
 ) -> Any:
@@ -71,9 +72,7 @@ def activate_user(*, session: SessionDep, token: str) -> Any:
             detail="The user with this email does not exist in the system.",
         )
     user.is_active = True
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    save_to_db(session=session, instance=user, refresh=True)
     return user
 
 
@@ -94,9 +93,14 @@ def change_password(
             status_code=400, detail={"old_password": "Password is not matched"}
         )
 
+    if payload.old_password == payload.new_password:
+        raise HTTPException(
+            status_code=400,
+            detail={"new_password": "New password must be different from the old one"},
+        )
+
     current_user.hashed_password = get_password_hash(payload.new_password)
-    session.add(current_user)
-    session.commit()
+    save_to_db(session=session, instance=current_user)
     return Message(message="Password changed successfully")
 
 
@@ -114,11 +118,10 @@ def update_user(
             raise HTTPException(
                 status_code=409, detail="User with this email already exists"
             )
-    user_data = user_in.model_dump(exclude_unset=True)
-    current_user.sqlmodel_update(user_data)
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
+
+    user = crud_users.update_user(
+        session=session, db_user=current_user, user_in=user_in
+    )
     return current_user
 
 

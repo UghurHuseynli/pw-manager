@@ -11,7 +11,9 @@ from app.api.dependencies import (
 from app.crud import users as crud_users
 from app.schemas.admin import ChangePassword
 from app.core.security import get_password_hash
+from app.crud.base import save_to_db
 from uuid import UUID
+
 
 router = APIRouter(
     prefix="/admin",
@@ -43,7 +45,7 @@ def read_user(*, session: SessionDep, user_id: UUID) -> Any:
     return user
 
 
-@router.post("/users", response_model=AdminPublic)
+@router.post("/users", response_model=AdminPublic, status_code=201)
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """Create New Users"""
 
@@ -56,9 +58,7 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
     user = crud_users.create_user(session=session, user_create=user_in)
 
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    save_to_db(session=session, instance=user, refresh=True)
     return user
 
 
@@ -73,17 +73,12 @@ def update_user(*, session: SessionDep, user_id: UUID, user_in: UserUpdate) -> A
         existing_user = crud_users.get_user_by_email(
             session=session, email=user_in.email
         )
-        if existing_user:
+        if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=409,
                 detail="The user with this email already exists in the system",
             )
-    user_data = user_in.model_dump(exclude_unset=True)
-    user.sqlmodel_update(user_data)
-
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    user = crud_users.update_user(session=session, db_user=user, user_in=user_in)
 
     return user
 
@@ -107,8 +102,7 @@ def change_password(
         )
 
     user.hashed_password = get_password_hash(payload.new_password)
-    session.add(user)
-    user.commit()
+    save_to_db(session=session, instance=user)
 
     return Message(message="User password successfully changed.")
 
