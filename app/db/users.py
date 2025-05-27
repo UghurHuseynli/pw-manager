@@ -26,8 +26,8 @@ class UserUpdate(SQLModel):
     email: EmailStr | None = Field(
         default=None, unique=True, index=True, max_length=255
     )
-    is_active: bool | None
-    is_superuser: bool | None
+    is_active: bool | None = Field(default=None)
+    is_superuser: bool | None = Field(default=None)
 
 
 class UserUpdateMe(SQLModel):

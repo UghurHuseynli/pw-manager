@@ -45,7 +45,7 @@ def read_user(*, session: SessionDep, user_id: UUID) -> Any:
     return user
 
 
-@router.post("/users", response_model=AdminPublic)
+@router.post("/users", response_model=AdminPublic, status_code=201)
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """Create New Users"""
 
@@ -73,7 +73,7 @@ def update_user(*, session: SessionDep, user_id: UUID, user_in: UserUpdate) -> A
         existing_user = crud_users.get_user_by_email(
             session=session, email=user_in.email
         )
-        if existing_user:
+        if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=409,
                 detail="The user with this email already exists in the system",
