@@ -27,7 +27,7 @@ from app.crud.base import save_to_db
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/signup", response_model=UserSignUpResponse)
+@router.post("/signup", response_model=UserSignUpResponse, status_code=201)
 def create_user(
     *, session: SessionDep, user_in: UserRegister, background_tasks: BackgroundTasks
 ) -> Any:
@@ -91,6 +91,12 @@ def change_password(
     if not verify_password(payload.old_password, current_user.hashed_password):
         raise HTTPException(
             status_code=400, detail={"old_password": "Password is not matched"}
+        )
+
+    if payload.old_password == payload.new_password:
+        raise HTTPException(
+            status_code=400,
+            detail={"new_password": "New password must be different from the old one"},
         )
 
     current_user.hashed_password = get_password_hash(payload.new_password)

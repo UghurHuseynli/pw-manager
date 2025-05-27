@@ -9,9 +9,10 @@ from app.db.users import User
 from app.db.credentials import Credentials
 from app.tests.utils.user import authentication_token_from_email
 from app.tests.utils.utils import get_superuser_token_headers
+from sqlalchemy import event
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session=session)
