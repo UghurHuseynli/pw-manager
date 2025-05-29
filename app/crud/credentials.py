@@ -1,16 +1,25 @@
 from sqlmodel import Session, select
 from uuid import UUID
-from app.db.credentials import Credentials, CredentialsCreate, CredentialsUpdate
+from app.db.credentials import (
+    Credentials,
+    CredentialsCreate,
+    CredentialsUpdate,
+    CredentialsAdminUpdate,
+)
+from app.db.users import User
 from app.core.security import get_credential_password_hash, decrypt_credential_password
 from app.crud.base import save_to_db
 
 
-def get_current_user_credentials_by_id(
-    *, session: Session, user_id: UUID, credential_id: UUID
+def get_credentials_by_id(
+    *, session: Session, credential_id: UUID, user_id: UUID = None
 ) -> Credentials | None:
-    statement = select(Credentials).where(
-        Credentials.id == credential_id, Credentials.user_id == user_id
-    )
+    if user_id:
+        statement = select(Credentials).where(
+            Credentials.id == credential_id, Credentials.user_id == user_id
+        )
+    else:
+        statement = select(Credentials).where(Credentials.id == credential_id)
     credentials = session.exec(statement).first()
     return credentials
 
@@ -45,10 +54,33 @@ def update_credentials(
     return db_credentials
 
 
+def update_credentials_by_admin(
+    *,
+    session: Session,
+    db_credentials: Credentials,
+    credentials_in: CredentialsAdminUpdate,
+) -> Credentials | None:
+    credentials_data = credentials_in.model_dump(exclude_unset=True)
+
+    if "password" in credentials_data:
+        credentials_data["hashed_password"] = get_credential_password_hash(
+            credentials_data.pop("password")
+        )
+
+    if "user_id" in credentials_data:
+        user = session.get(User, credentials_data["user_id"])
+        if not user:
+            return None
+
+    db_credentials.sqlmodel_update(credentials_data)
+    save_to_db(session=session, instance=db_credentials, refresh=True)
+    return db_credentials
+
+
 def get_credential_password(
     *, session: Session, user_id: UUID, credential_id: UUID
 ) -> str | None:
-    credentials = get_current_user_credentials_by_id(
+    credentials = get_credentials_by_id(
         session=session, user_id=user_id, credential_id=credential_id
     )
     if not credentials:

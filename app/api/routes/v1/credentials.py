@@ -45,7 +45,7 @@ def read_credential(
 ) -> Any:
     """Retrieve a specific credential by ID for the current user."""
 
-    credential = crud_credentials.get_current_user_credentials_by_id(
+    credential = crud_credentials.get_credentials_by_id(
         session=session, user_id=current_user.id, credential_id=credential_id
     )
 
@@ -78,7 +78,7 @@ def update_credential(
 ) -> Any:
     """Update an existing credential for the current user."""
 
-    db_credential = crud_credentials.get_current_user_credentials_by_id(
+    db_credential = crud_credentials.get_credentials_by_id(
         session=session, user_id=current_user.id, credential_id=credential_id
     )
 
@@ -114,7 +114,7 @@ def delete_credential(
 ) -> Any:
     """Delete a specific credential for the current user."""
 
-    db_credential = crud_credentials.get_current_user_credentials_by_id(
+    db_credential = crud_credentials.get_credentials_by_id(
         session=session, user_id=current_user.id, credential_id=credential_id
     )
 

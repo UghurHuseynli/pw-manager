@@ -21,6 +21,10 @@ class CredentialsUpdate(SQLModel):
     url: str | None = Field(default=None)
 
 
+class CredentialsAdminUpdate(CredentialsUpdate):
+    user_id: uuid.UUID | None = Field(default=None)
+
+
 class CredentialPublic(SQLModel):
     id: uuid.UUID
     title: str
@@ -36,6 +40,10 @@ class CredentialDetail(CredentialsBase):
     username: str
     created_at: datetime
     updated_at: datetime
+
+
+class CredentialAdminDetail(CredentialDetail):
+    user_id: uuid.UUID
 
 
 class Credentials(CredentialsBase, table=True):
