@@ -53,8 +53,8 @@ class User(UserBase, table=True):
 class UserPublic(SQLModel):
     id: uuid.UUID
     username: str
-    email: EmailStr = Field(unique=True, index=True, max_length=255)
-    is_active: bool = Field(default=False)
+    email: EmailStr
+    is_active: bool
 
 
 class UsersPublic(SQLModel):

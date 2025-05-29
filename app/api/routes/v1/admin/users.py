@@ -3,11 +3,7 @@ from typing import Any
 from sqlmodel import select, func
 from app.db.users import UsersPublic, User, UserCreate, UserUpdate, AdminPublic
 from app.schemas.users import Message
-from app.api.dependencies import (
-    SessionDep,
-    get_current_active_superuser,
-    CurrentSuperUser,
-)
+from app.api.dependencies import SessionDep, CurrentSuperUser
 from app.crud import users as crud_users
 from app.schemas.admin import ChangePassword
 from app.core.security import get_password_hash
@@ -15,14 +11,10 @@ from app.crud.base import save_to_db
 from uuid import UUID
 
 
-router = APIRouter(
-    prefix="/admin",
-    tags=["admin"],
-    dependencies=[Depends(get_current_active_superuser)],
-)
+router = APIRouter(prefix="/users", tags=["admin:users"])
 
 
-@router.get("/users", response_model=UsersPublic)
+@router.get("/", response_model=UsersPublic)
 def read_users(*, session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """Retrive Users"""
 
@@ -35,7 +27,7 @@ def read_users(*, session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     return UsersPublic(data=users, count=count)
 
 
-@router.get("/users/{user_id}", response_model=AdminPublic)
+@router.get("/{user_id}", response_model=AdminPublic)
 def read_user(*, session: SessionDep, user_id: UUID) -> Any:
     user = session.get(User, user_id)
     if not user:
@@ -45,7 +37,7 @@ def read_user(*, session: SessionDep, user_id: UUID) -> Any:
     return user
 
 
-@router.post("/users", response_model=AdminPublic, status_code=201)
+@router.post("/", response_model=AdminPublic, status_code=201)
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """Create New Users"""
 
@@ -62,7 +54,7 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     return user
 
 
-@router.patch("/users/{user_id}", response_model=AdminPublic)
+@router.patch("/{user_id}", response_model=AdminPublic)
 def update_user(*, session: SessionDep, user_id: UUID, user_in: UserUpdate) -> Any:
     user = session.get(User, user_id)
     if not user:
@@ -83,7 +75,7 @@ def update_user(*, session: SessionDep, user_id: UUID, user_in: UserUpdate) -> A
     return user
 
 
-@router.post("/users/{user_id}/change-password", response_model=Message)
+@router.post("/{user_id}/change-password", response_model=Message)
 def change_password(
     *,
     session: SessionDep,
@@ -107,7 +99,7 @@ def change_password(
     return Message(message="User password successfully changed.")
 
 
-@router.delete("/users/{user_id}", response_model=Message)
+@router.delete("/{user_id}", response_model=Message)
 def delete_user(*, session: SessionDep, user_id: UUID) -> Any:
     user = session.get(User, user_id)
     if not user:
