@@ -60,10 +60,13 @@ def create_credential(
 ) -> Any:
     """Create new credentials for the user_id."""
 
-    credentials_data = CredentialsCreate.model_validate(credentials_in)
+    # credentials_data = CredentialsCreate.model_validate(credentials_in)
     credentials = crud_credentials.create_credentials(
-        session=session, credentials_create=credentials_data, user_id=user_id
+        session=session, credentials_create=credentials_in, user_id=user_id
     )
+
+    if credentials is None:
+        raise HTTPException(status_code=404, detail="User not found.")
 
     return credentials
 
@@ -81,7 +84,7 @@ def update_credential(
     if not db_credential:
         raise HTTPException(status_code=404, detail="Credential not found")
 
-    credential = crud_credentials.update_credentials_by_admin(
+    credential = crud_credentials.update_credentials(
         session=session, db_credentials=db_credential, credentials_in=credential_in
     )
     if not credential:

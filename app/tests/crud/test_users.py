@@ -3,8 +3,6 @@ from sqlmodel import Session
 from app.db.users import User, UserCreate, UserUpdate, UserUpdateMe
 from app.tests.utils.utils import random_lower_string, random_email
 from app.crud import users as crud_users
-from app.core.security import verify_password
-from app.utils import generate_reset_token, verify_reset_token
 
 
 def test_create_user(db: Session) -> None:

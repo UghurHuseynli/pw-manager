@@ -13,7 +13,7 @@ def test_get_users_me(
 ) -> None:
     r = client.get(f"{settings.API_V1_STR}/users/me", headers=normal_user_token_headers)
     current_user = r.json()
-
+    print(current_user)
     assert current_user
     assert current_user["is_active"] is True
     assert current_user["email"] == settings.TEST_USER_EMAIL
@@ -65,7 +65,9 @@ def test_register_and_activate_users(client: TestClient, db: Session) -> None:
         assert activated_user["is_active"] is True
 
 
-def test_register_with_existing_email(client: TestClient) -> None:
+def test_register_with_existing_email(
+    client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
     email = settings.TEST_USER_EMAIL
     password = random_lower_string()
     username = random_lower_string()
