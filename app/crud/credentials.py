@@ -26,7 +26,11 @@ def get_credentials_by_id(
 
 def create_credentials(
     *, session: Session, credentials_create: CredentialsCreate, user_id: UUID
-) -> Credentials:
+) -> Credentials | None:
+    user = session.get(User, user_id)
+    if not user:
+        return None
+
     db_obj = Credentials.model_validate(
         credentials_create,
         update={
@@ -41,27 +45,12 @@ def create_credentials(
 
 
 def update_credentials(
-    *, session: Session, db_credentials: Credentials, credentials_in: CredentialsUpdate
-) -> Credentials:
-    credentials_data = credentials_in.model_dump(exclude_unset=True)
-
-    if "password" in credentials_data:
-        credentials_data["hashed_password"] = get_credential_password_hash(
-            credentials_data.pop("password")
-        )
-    db_credentials.sqlmodel_update(credentials_data)
-    save_to_db(session=session, instance=db_credentials, refresh=True)
-    return db_credentials
-
-
-def update_credentials_by_admin(
     *,
     session: Session,
     db_credentials: Credentials,
     credentials_in: CredentialsAdminUpdate,
 ) -> Credentials | None:
-    credentials_data = credentials_in.model_dump(exclude_unset=True)
-
+    credentials_data = credentials_in.model_dump(exclude_unset=True, exclude_none=True)
     if "password" in credentials_data:
         credentials_data["hashed_password"] = get_credential_password_hash(
             credentials_data.pop("password")

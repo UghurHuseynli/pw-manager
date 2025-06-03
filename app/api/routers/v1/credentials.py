@@ -11,6 +11,7 @@ from app.db.credentials import (
     CredentialsUpdate,
     Credentials,
     CredentialDetail,
+    CredentialsAdminUpdate,
 )
 from app.schemas.credentials import Password
 from app.schemas.users import Message
@@ -85,8 +86,9 @@ def update_credential(
     if not db_credential:
         raise HTTPException(status_code=404, detail="Credential not found")
 
+    credential_update = CredentialsAdminUpdate.model_validate(credential_in)
     credential = crud_credentials.update_credentials(
-        session=session, db_credentials=db_credential, credentials_in=credential_in
+        session=session, db_credentials=db_credential, credentials_in=credential_update
     )
 
     return credential
