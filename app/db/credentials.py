@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, Column, TIMESTAMP, func
 from datetime import datetime, timezone
 import uuid
 
@@ -55,7 +55,14 @@ class Credentials(CredentialsBase, table=True):
     username: str
     hashed_password: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
+    updated_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(
+            TIMESTAMP(timezone=True),
+            nullable=True,
+            server_default=None,
+            server_onupdate=func.now(),
+        ),
+    )
 
 from app.db.users import User

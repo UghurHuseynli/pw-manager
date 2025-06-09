@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from typing import Annotated
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordRequestForm
+from datetime import datetime, timezone
 from app.crud.users import authenticate, get_user_by_email
+from app.crud.base import save_to_db
 from app.schemas.users import Token, Message, NewPassword
 from app.core.security import create_access_token, get_password_hash
 from app.core.config import settings
@@ -31,6 +33,9 @@ def login_access_token(
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    user.last_login = datetime.now(timezone.utc)
+    save_to_db(session=session, instance=user)
+
     return Token(
         access_token=create_access_token(
             subject=user.id, expires_delta=access_token_expires
