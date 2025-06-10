@@ -49,13 +49,7 @@ class User(UserBase, table=True):
     is_otp: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(
-            TIMESTAMP(timezone=True),
-            nullable=True,
-            server_default=None,
-            server_onupdate=func.now(),
-        ),
+        default=None, sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)}
     )
     credentials: list["Credentials"] = Relationship(back_populates="user")
     last_login: datetime | None = Field(default=None)

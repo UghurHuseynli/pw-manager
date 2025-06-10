@@ -82,7 +82,7 @@ def activate_user(*, session: SessionDep, token: str) -> Any:
 def enable_2fa(session: SessionDep, current_user: CurrentUser):
     if not current_user.otp_secret:
         current_user.otp_secret = pyotp.random_base32()
-    current_user.is_otp_enabled = True
+    current_user.is_otp = True
     save_to_db(session=session, instance=current_user, refresh=True)
 
     totp = pyotp.TOTP(current_user.otp_secret)
@@ -97,10 +97,10 @@ def enable_2fa(session: SessionDep, current_user: CurrentUser):
 
 @router.post("/2fa/disable", response_model=Message)
 def disable_2fa(session: SessionDep, current_user: CurrentUser) -> Any:
-    if current_user.is_otp_enabled:
-        current_user.is_otp_enabled = False
+    if current_user.is_otp:
+        current_user.is_otp = False
         save_to_db(session=session, instance=current_user)
-    return Message(message="2FA is disabled")
+    return Message(message="Multi-factor authentication is disabled.")
 
 
 @router.get("/me", response_model=UserPublic)

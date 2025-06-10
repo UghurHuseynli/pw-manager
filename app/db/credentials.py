@@ -39,7 +39,7 @@ class CredentialDetail(CredentialsBase):
     id: uuid.UUID
     username: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime | None
 
 
 class CredentialAdminDetail(CredentialDetail):
@@ -56,13 +56,7 @@ class Credentials(CredentialsBase, table=True):
     hashed_password: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(
-            TIMESTAMP(timezone=True),
-            nullable=True,
-            server_default=None,
-            server_onupdate=func.now(),
-        ),
+        default=None, sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)}
     )
 
 
