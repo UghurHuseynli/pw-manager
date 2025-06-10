@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from typing import Annotated
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordRequestForm
+import pyotp
 from datetime import datetime, timezone
 from app.crud.users import authenticate, get_user_by_email
 from app.crud.base import save_to_db
@@ -14,6 +15,7 @@ from app.utils import (
     generate_reset_password_email,
     verify_reset_token,
     send_email,
+    OAuth2RequestWithOTP,
 )
 
 
@@ -22,7 +24,7 @@ router = APIRouter(tags=["login"])
 
 @router.post("/login/access-token")
 def login_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    session: SessionDep, form_data: Annotated[OAuth2RequestWithOTP, Depends()]
 ) -> Token:
     """OAuth2 compatible token login, get an access token for future requests."""
     user = authenticate(
@@ -30,6 +32,9 @@ def login_access_token(
     )
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
+    elif user.is_otp:
+        if not form_data.otp or not pyotp.TOTP(user.otp_secret).verify(form_data.otp):
+            raise HTTPException(401, "Invalid or missing OTP")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

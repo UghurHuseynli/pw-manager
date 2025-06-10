@@ -65,4 +65,5 @@ class Credentials(CredentialsBase, table=True):
         ),
     )
 
+
 from app.db.users import User
