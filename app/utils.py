@@ -1,6 +1,8 @@
 import logging
 from app.core.config import settings
 from typing import Any
+from fastapi import Form
+from fastapi.security import OAuth2PasswordRequestForm
 from dataclasses import dataclass
 from pathlib import Path
 from jinja2 import Template
@@ -11,6 +13,28 @@ from datetime import timedelta, timezone, datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class OAuth2RequestWithOTP(OAuth2PasswordRequestForm):
+    def __init__(
+        self,
+        grant_type: str = Form(None),
+        username: str = Form(...),
+        password: str = Form(...),
+        scope: str = Form(""),
+        client_id: str | None = Form(None),
+        client_secret: str | None = Form(None),
+        otp: str | None = Form(None),
+    ):
+        super().__init__(
+            grant_type=grant_type,
+            username=username,
+            password=password,
+            scope=scope,
+            client_id=client_id,
+            client_secret=client_secret,
+        )
+        self.otp = otp
 
 
 @dataclass

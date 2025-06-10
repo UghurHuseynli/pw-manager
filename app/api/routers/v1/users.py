@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Response
 from typing import Any
+import pyotp, qrcode, io
 from app.db.users import (
     User,
     UserPublic,
@@ -74,6 +74,33 @@ def activate_user(*, session: SessionDep, token: str) -> Any:
     user.is_active = True
     save_to_db(session=session, instance=user, refresh=True)
     return user
+
+
+@router.post(
+    "/2fa/enable",
+)
+def enable_2fa(session: SessionDep, current_user: CurrentUser):
+    if not current_user.otp_secret:
+        current_user.otp_secret = pyotp.random_base32()
+    current_user.is_otp = True
+    save_to_db(session=session, instance=current_user, refresh=True)
+
+    totp = pyotp.TOTP(current_user.otp_secret)
+    uri = totp.provisioning_uri(
+        name=current_user.username, issuer_name=settings.PROJECT_NAME
+    )
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return Response(buf.getvalue(), media_type="image/png")
+
+
+@router.post("/2fa/disable", response_model=Message)
+def disable_2fa(session: SessionDep, current_user: CurrentUser) -> Any:
+    if current_user.is_otp:
+        current_user.is_otp = False
+        save_to_db(session=session, instance=current_user)
+    return Message(message="Multi-factor authentication is disabled.")
 
 
 @router.get("/me", response_model=UserPublic)

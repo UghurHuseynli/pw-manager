@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, Column, TIMESTAMP, func
 from datetime import datetime, timezone
 from pydantic import EmailStr
 import uuid
@@ -45,9 +45,14 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    otp_secret: str | None = Field(default=None)
+    is_otp: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime | None = Field(
+        default=None, sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)}
+    )
     credentials: list["Credentials"] = Relationship(back_populates="user")
+    last_login: datetime | None = Field(default=None)
 
 
 class UserPublic(SQLModel):
@@ -55,6 +60,7 @@ class UserPublic(SQLModel):
     username: str
     email: EmailStr
     is_active: bool
+    is_otp: bool
 
 
 class UsersPublic(SQLModel):
@@ -65,7 +71,9 @@ class UsersPublic(SQLModel):
 class AdminPublic(UserBase):
     id: uuid.UUID
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime | None
+    last_login: datetime | None
+    is_otp: bool
 
 
 class UserSignUpResponse(UserPublic):

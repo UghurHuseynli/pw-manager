@@ -82,6 +82,28 @@ def test_register_with_existing_email(
     )
 
 
+def test_enable_otp(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    r = client.post(
+        f"{settings.API_V1_STR}/users/2fa/enable", headers=normal_user_token_headers
+    )
+
+    assert r.status_code == 200
+
+
+def test_disable_otp(
+    client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
+) -> None:
+    r = client.post(
+        f"{settings.API_V1_STR}/users/2fa/disable", headers=normal_user_token_headers
+    )
+    response = r.json()
+
+    assert r.status_code == 200
+    assert response["message"] == "Multi-factor authentication is disabled."
+
+
 def test_change_password_with_old_password(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
@@ -142,6 +164,9 @@ def test_update_user(
     new_username = random_lower_string()
     email = random_email()
     data = {"username": new_username, "email": email}
+    statement = select(User).where(User.email == settings.TEST_USER_EMAIL)
+    user = db.exec(statement).first()
+    first_time = user.updated_at
 
     r = client.patch(
         f"{settings.API_V1_STR}/users/me",
@@ -156,6 +181,7 @@ def test_update_user(
     assert updated_user
     assert updated_user.username == new_username
     assert updated_user.email == email
+    assert updated_user.updated_at != first_time
 
 
 def test_update_user_with_existing_email(
