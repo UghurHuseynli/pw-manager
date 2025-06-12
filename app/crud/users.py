@@ -1,4 +1,6 @@
 from sqlmodel import Session, select
+import pyotp
+import io, qrcode
 from app.db.users import User, UserCreate, UserUpdate
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import save_to_db
@@ -35,3 +37,12 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     if not verify_password(password, user.hashed_password):
         return None
     return user
+
+
+def create_totp_qr(*, user: User, issuer_name: str):
+    totp = pyotp.TOTP(user.otp_secret)
+    uri = totp.provisioning_uri(name=user.username, issuer_name=issuer_name)
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()

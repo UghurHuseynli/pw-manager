@@ -59,6 +59,7 @@ def create_user(
 
 @router.post("/activate", response_model=UserPublic)
 def activate_user(*, session: SessionDep, token: str) -> Any:
+    """Activate User"""
     email = verify_reset_token(token=token)
     if not email:
         raise HTTPException(
@@ -78,25 +79,25 @@ def activate_user(*, session: SessionDep, token: str) -> Any:
 
 @router.post(
     "/2fa/enable",
+    response_class=Response,
+    responses={200: {"content": {"image/png": {}}, "description": "OTP QR code PNG"}},
 )
 def enable_2fa(session: SessionDep, current_user: CurrentUser):
+    """Enable Multi-factor authentication for authenticated user"""
     if not current_user.otp_secret:
         current_user.otp_secret = pyotp.random_base32()
     current_user.is_otp = True
     save_to_db(session=session, instance=current_user, refresh=True)
-
-    totp = pyotp.TOTP(current_user.otp_secret)
-    uri = totp.provisioning_uri(
-        name=current_user.username, issuer_name=settings.PROJECT_NAME
+    res = crud_users.create_totp_qr(
+        user=current_user, issuer_name=settings.PROJECT_NAME
     )
-    img = qrcode.make(uri)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return Response(buf.getvalue(), media_type="image/png")
+
+    return Response(res, media_type="image/png")
 
 
 @router.post("/2fa/disable", response_model=Message)
 def disable_2fa(session: SessionDep, current_user: CurrentUser) -> Any:
+    """Disable Multi-factor authentication for authenticated user"""
     if current_user.is_otp:
         current_user.is_otp = False
         save_to_db(session=session, instance=current_user)

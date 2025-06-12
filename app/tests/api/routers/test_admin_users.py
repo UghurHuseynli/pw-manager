@@ -167,6 +167,108 @@ def test_create_user_permission_denied(
     assert response["detail"] == "The user doesn't have enough privileges"
 
 
+def test_enable_otp(
+    client: TestClient,
+    db: Session,
+    superuser_token_headers: dict[str, str],
+    normal_user_token_headers: dict[str, str],
+) -> None:
+    email = settings.TEST_USER_EMAIL
+    statement = select(User).where(User.email == email)
+    db_user = db.exec(statement).first()
+    r = client.post(
+        f"{settings.API_V1_STR}/admin/users/2fa/enable/{db_user.id}",
+        headers=superuser_token_headers,
+    )
+
+    assert r.status_code == 200
+
+
+def test_enable_otp_wrong_id(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    fake_id = uuid.uuid4()
+    r = client.post(
+        f"{settings.API_V1_STR}/admin/users/2fa/enable/{fake_id}",
+        headers=superuser_token_headers,
+    )
+    response = r.json()
+
+    assert r.status_code == 404
+    assert response["detail"] == "The user can't exists in the system."
+
+
+def test_enable_otp_permission_denied(
+    client: TestClient,
+    db: Session,
+    superuser_token_headers: dict[str, str],
+    normal_user_token_headers: dict[str, str],
+) -> None:
+    email = settings.TEST_USER_EMAIL
+    statement = select(User).where(User.email == email)
+    db_user = db.exec(statement).first()
+    r = client.post(
+        f"{settings.API_V1_STR}/admin/users/2fa/enable/{db_user.id}",
+        headers=normal_user_token_headers,
+    )
+    response = r.json()
+
+    assert r.status_code == 403
+    assert response["detail"] == "The user doesn't have enough privileges"
+
+
+def test_disable_otp(
+    client: TestClient,
+    db: Session,
+    superuser_token_headers: dict[str, str],
+    normal_user_token_headers: dict[str, str],
+) -> None:
+    email = settings.TEST_USER_EMAIL
+    statement = select(User).where(User.email == email)
+    db_user = db.exec(statement).first()
+    r = client.post(
+        f"{settings.API_V1_STR}/admin/users/2fa/disable/{db_user.id}",
+        headers=superuser_token_headers,
+    )
+    response = r.json()
+
+    assert r.status_code == 200
+    assert response["message"] == "Multi-factor authentication is disabled."
+
+
+def test_disable_otp_wrong_id(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    fake_id = uuid.uuid4()
+    r = client.post(
+        f"{settings.API_V1_STR}/admin/users/2fa/disable/{fake_id}",
+        headers=superuser_token_headers,
+    )
+    response = r.json()
+
+    assert r.status_code == 404
+    assert response["detail"] == "The user can't exists in the system."
+
+
+def test_disable_otp_permission_denied(
+    client: TestClient,
+    db: Session,
+    superuser_token_headers: dict[str, str],
+    normal_user_token_headers: dict[str, str],
+) -> None:
+    email = settings.TEST_USER_EMAIL
+    statement = select(User).where(User.email == email)
+    db_user = db.exec(statement).first()
+    r = client.post(
+        f"{settings.API_V1_STR}/admin/users/2fa/disable/{db_user.id}",
+        headers=normal_user_token_headers,
+    )
+    response = r.json()
+
+    assert r.status_code == 403
+    assert response["detail"] == "The user doesn't have enough privileges"
+
+
 def test_update_user_invalid_id(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:

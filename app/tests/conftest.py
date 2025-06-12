@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from sqlalchemy.exc import ProgrammingError, OperationalError
+from sqlalchemy.engine.url import make_url
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete, create_engine, SQLModel, text
@@ -17,22 +18,65 @@ from app.tests.utils.credentials import create_random_credentials
 
 TEST_DATABASE_URL = str(settings.SQLALCHEMY_TEST_DATABASE_URI)
 admin_engine = create_engine(
-    str(settings.SQLALCHEMY_DATABASE_URI), isolation_level="AUTOCOMMIT"
+    str(settings.SQLALCHEMY_DATABASE_URI),
+    isolation_level="AUTOCOMMIT",
+    # Add pool settings to ensure connections are properly closed
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 engine = create_engine(TEST_DATABASE_URL)
 
 
+def get_database_name_from_url(database_url: str) -> str:
+    """Extract database name from URL properly."""
+    url = make_url(database_url)
+    return url.database
+
+
 def create_test_database():
     """Create the test database if it doesn't exist."""
+    db_name = get_database_name_from_url(TEST_DATABASE_URL)
+
     with admin_engine.connect() as connection:
         try:
+            # For PostgreSQL, use proper quoting
+            connection.execute(text(f'CREATE DATABASE "{db_name}"'))
+            print(f"Created test database: {db_name}")
+        except ProgrammingError as e:
+            if "already exists" in str(e).lower():
+                print(f"Database {db_name} already exists, continuing...")
+            else:
+                raise
+        except OperationalError as e:
+            print(f"Database cannot be created: {e}")
+            raise
+
+
+def delete_test_database():
+    """Delete the test database if it exists."""
+    db_name = get_database_name_from_url(TEST_DATABASE_URL)
+
+    with admin_engine.connect() as connection:
+        try:
+            # Terminate active connections to the test database first
             connection.execute(
-                text(f'CREATE DATABASE "{TEST_DATABASE_URL.split("/")[-1]}"')
+                text(f"""
+                SELECT pg_terminate_backend(pid)
+                FROM pg_stat_activity
+                WHERE datname = '{db_name}' AND pid <> pg_backend_pid()
+            """)
             )
-        except ProgrammingError:
-            print("Database already exists, continuing...")
-        except OperationalError:
-            print("Database can not create.")
+
+            # Now drop the database
+            connection.execute(text(f'DROP DATABASE "{db_name}"'))
+            print(f"Deleted test database: {db_name}")
+        except ProgrammingError as e:
+            if "does not exist" in str(e).lower():
+                print(f"Database {db_name} does not exist, continuing...")
+            else:
+                print(f"Error dropping database: {e}")
+        except OperationalError as e:
+            print(f"Database cannot be deleted: {e}")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -44,7 +88,12 @@ def setup_test_database():
     create_test_database()
     SQLModel.metadata.create_all(bind=engine)
     yield
+
+    # Ensure all connections are closed before dropping
+    engine.dispose()
+
     SQLModel.metadata.drop_all(bind=engine)
+    delete_test_database()
 
 
 _current_session = None
@@ -61,6 +110,8 @@ def db() -> Generator[Session, None, None]:
         init_db(session=session)
         _current_session = session
         yield session
+
+        # Ensure proper cleanup
         try:
             session.exec(delete(Credentials))
             session.exec(delete(User))
@@ -69,6 +120,8 @@ def db() -> Generator[Session, None, None]:
             session.rollback()
             print(f"Cleanup error: {e}")
         finally:
+            # Ensure session is closed
+            session.close()
             _current_session = None
 
 
