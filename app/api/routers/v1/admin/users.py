@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from typing import Any
 from sqlmodel import select, func
+import pyotp
 from app.db.users import UsersPublic, User, UserCreate, UserUpdate, AdminPublic
 from app.schemas.users import Message
 from app.api.dependencies import SessionDep, CurrentSuperUser
 from app.crud import users as crud_users
 from app.schemas.admin import ChangePassword
 from app.core.security import get_password_hash
+from app.core.config import settings
 from app.crud.base import save_to_db
 from uuid import UUID
 
@@ -29,6 +31,7 @@ def read_users(*, session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 
 @router.get("/{user_id}", response_model=AdminPublic)
 def read_user(*, session: SessionDep, user_id: UUID) -> Any:
+    """Read user based on user_id"""
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
@@ -54,8 +57,44 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     return user
 
 
+@router.post(
+    "/2fa/enable/{user_id}",
+    response_class=Response,
+    responses={200: {"content": {"image/png": {}}, "description": "OTP QR code PNG"}},
+)
+def enable_2fa(session: SessionDep, user_id: UUID) -> Any:
+    """Enable Multi-factor authenticaton for user based on user_id"""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404, detail="The user can't exists in the system."
+        )
+    if not user.otp_secret:
+        user.otp_secret = pyotp.random_base32()
+    user.is_otp = True
+    save_to_db(session=session, instance=user, refresh=True)
+
+    res = crud_users.create_totp_qr(user=user, issuer_name=settings.PROJECT_NAME)
+    return Response(res, media_type="image/png")
+
+
+@router.post("/2fa/disable/{user_id}", response_model=Message)
+def disable_2fa(session: SessionDep, user_id: UUID) -> Any:
+    """Disable Multi-factor authentication for user based on user_id"""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404, detail="The user can't exists in the system."
+        )
+    if user.is_otp:
+        user.is_otp = False
+        save_to_db(session=session, instance=user)
+    return Message(message="Multi-factor authentication is disabled.")
+
+
 @router.patch("/{user_id}", response_model=AdminPublic)
 def update_user(*, session: SessionDep, user_id: UUID, user_in: UserUpdate) -> Any:
+    """Update User data based on user_id"""
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
@@ -83,6 +122,7 @@ def change_password(
     current_superuser: CurrentSuperUser,
     payload: ChangePassword,
 ) -> Any:
+    """Change user password based on user_id"""
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
@@ -101,6 +141,8 @@ def change_password(
 
 @router.delete("/{user_id}", response_model=Message)
 def delete_user(*, session: SessionDep, user_id: UUID) -> Any:
+    """Deletes a user from the system based on user_id"""
+
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
