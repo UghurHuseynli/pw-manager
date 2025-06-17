@@ -3,7 +3,6 @@ from uuid import UUID
 from app.db.credentials import (
     Credentials,
     CredentialsCreate,
-    CredentialsUpdate,
     CredentialsAdminUpdate,
 )
 from app.db.users import User

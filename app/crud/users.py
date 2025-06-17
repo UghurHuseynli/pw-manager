@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
 import pyotp
-import io, qrcode
+import io
+import qrcode
 from app.db.users import User, UserCreate, UserUpdate
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import save_to_db

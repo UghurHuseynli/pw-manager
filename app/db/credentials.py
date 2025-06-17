@@ -1,6 +1,7 @@
-from sqlmodel import SQLModel, Field, Relationship, Column, TIMESTAMP, func
+from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, timezone
 import uuid
+from typing import TYPE_CHECKING
 
 
 class CredentialsBase(SQLModel):
@@ -60,4 +61,5 @@ class Credentials(CredentialsBase, table=True):
     )
 
 
-from app.db.users import User
+if TYPE_CHECKING:
+    from app.db.users import User

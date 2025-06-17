@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlmodel import Session
 import uuid
 from fastapi.testclient import TestClient
 from app.tests.utils.utils import random_email, random_lower_string
@@ -26,12 +26,12 @@ def test_get_credentials_by_user_id(
     client: TestClient,
     credential: Credentials,
     normal_user_token_headers: dict[str, str],
-    superuser_token_headers: dict[str, str],
 ) -> None:
     r = client.get(
         f"{settings.API_V1_STR}/credentials/{credential.id}",
-        headers=superuser_token_headers,
+        headers=normal_user_token_headers,
     )
+    assert 200 <= r.status_code < 300
 
 
 def test_get_credential_by_id(

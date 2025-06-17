@@ -1,11 +1,9 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Response
 from typing import Any
-import pyotp, qrcode, io
+import pyotp
 from app.db.users import (
-    User,
     UserPublic,
     UserCreate,
-    UserUpdate,
     UserUpdateMe,
     UserRegister,
     UserSignUpResponse,
@@ -147,9 +145,7 @@ def update_user(
                 status_code=409, detail="User with this email already exists"
             )
 
-    user = crud_users.update_user(
-        session=session, db_user=current_user, user_in=user_in
-    )
+    crud_users.update_user(session=session, db_user=current_user, user_in=user_in)
     return current_user
 
 
