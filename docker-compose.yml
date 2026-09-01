@@ -1,0 +1,54 @@
+services:
+  traefik:
+    build:
+      context: ./traefik
+      dockerfile: Dockerfile
+    container_name: traefik-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      # For Let's Encrypt certificates
+      - traefik-data:/data/traefik
+      # For logs
+      - traefik-logs:/var/log/traefik
+    environment:
+      - TRAEFIK_LOG_LEVEL=INFO
+    networks:
+      - traefik-network
+    labels:
+      # Watchtower auto-update (optional)
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  fastapi-app:
+    build: .
+    container_name: fastapi-app-prod
+    restart: unless-stopped
+    environment:
+      - ENV=production
+    env_file:
+      - .env
+    networks:
+      - traefik-network
+    # Health check at Docker level (optional, since Traefik has its own)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      # Watchtower auto-update (optional)
+      - "com.centurylinklabs.watchtower.enable=true"
+
+volumes:
+  traefik-data:
+    driver: local
+  traefik-logs:
+    driver: local
+
+networks:
+  traefik-network:
+    driver: bridge

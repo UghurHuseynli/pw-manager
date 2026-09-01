@@ -5,29 +5,29 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "alembic>=1.15.2",
+    "alembic>=1.16.5",
     # Pin bcrypt until passlib supports the latest
     "bcrypt==4.0.1",
-    "cryptography>=45.0.3",
+    "cryptography>=45.0.7",
     "emails>=0.6",
-    "fastapi[standard]>=0.115.12",
+    "fastapi[standard]>=0.116.1",
     "passlib[bcrypt]>=1.7.4",
     "psycopg2-binary>=2.9.10",
-    "pydantic>=2.11.4",
-    "pydantic-settings>=2.9.1",
+    "pydantic>=2.11.9",
+    "pydantic-settings>=2.10.1",
     "pyotp>=2.9.0",
-    "pytest>=8.3.5",
-    "python-jose>=3.4.0",
+    "pytest>=8.4.2",
+    "python-jose>=3.5.0",
     "qrcode[pil]>=8.2",
-    "ruff>=0.11.13",
+    "ruff>=0.13.0",
     "sqlmodel>=0.0.24",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.11.7",
+    "ruff>=0.13.0",
 ]
 
 [tool.ruff]
-per-file-ignores = { "alembic/env.py" = ["F401"] }
+lint.per-file-ignores = { "alembic/env.py" = ["F401"] }
 exclude = ["versions"]

@@ -1,5 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import PostgresDsn, computed_field, EmailStr, model_validator, AnyUrl, BeforeValidator
+from pydantic import (
+    PostgresDsn,
+    computed_field,
+    EmailStr,
+    model_validator,
+    AnyUrl,
+    BeforeValidator,
+)
 from pydantic_core import MultiHostUrl
 from typing_extensions import Self
 from typing import Any, Annotated
@@ -41,7 +48,7 @@ class Settings(BaseSettings):
         return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
             self.FRONTEND_URL
         ]
-    
+
     # Database settings
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
