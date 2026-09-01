@@ -48,21 +48,20 @@ providers:
     watch: true
   docker:
     exposedByDefault: false
+    network: traefik-network
   
   # HTTP provider for service discovery (if using external service discovery)
   # http:
   #   endpoint: "http://service-discovery:8080/api/services"
   #   pollInterval: "5s"
 
-# Logging
+# Logging (to stdout, so `docker compose logs traefik` shows it)
 log:
   level: INFO
-  filePath: /var/log/traefik/traefik.log
   format: json
 
 # Access logs
 accessLog:
-  filePath: /var/log/traefik/access.log
   format: json
   filters:
     statusCodes:

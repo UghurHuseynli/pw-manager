@@ -1,275 +1,31 @@
-# # Dynamic configuration for services
-# # This file goes in the dynamic/ directory
+# Dynamic configuration for Traefik.
+#
+# Routers and services for the app come from Docker labels
+# (see docker-compose.traefik.yml) — this file only holds reusable
+# middlewares that those labels can reference.
 
-# http:
-#   # Routers
-#   routers:
-#     api:
-#       rule: "Host(`traefik.yourdomain.com`)"  # Replace with your domain
-#       entryPoints:
-#         - websecure
-#       service: api@internal
-#       tls:
-#         certResolver: letsencrypt
-#       middlewares:
-#         - auth
-#         - secure-headers
-
-#     fastapi-app:
-#       rule: "Host(`api.yourdomain.com`)"  # Replace with your domain
-#       entryPoints:
-#         - websecure
-#       service: fastapi-app
-#       tls:
-#         certResolver: letsencrypt
-#       middlewares:
-#         - secure-headers
-#         - rate-limit
-
-#   # Services
-#   services:
-#     fastapi-app:
-#       loadBalancer:
-#         servers:
-#           - url: "http://fastapi-app:8000"  # For ECS, this will be service discovery
-#         healthCheck:
-#           path: "/api/v1/health"
-#           interval: "10s"
-#           timeout: "3s"
-
-#   # Middlewares
-#   middlewares:
-#     # Basic Auth for Traefik dashboard
-#     auth:
-#       basicAuth:
-#         users:
-#           - "admin:$2y$10$..." # Generate with: htpasswd -nb admin yourpassword
-
-#     # Security headers
-#     secure-headers:
-#       headers:
-#         frameDeny: true
-#         sslRedirect: true
-#         browserXssFilter: true
-#         contentTypeNosniff: true
-#         forceSTSHeader: true
-#         stsIncludeSubdomains: true
-#         stsPreload: true
-#         stsSeconds: 31536000
-#         customRequestHeaders:
-#           X-Forwarded-Proto: "https"
-
-#     # Rate limiting
-#     rate-limit:
-#       rateLimit:
-#         burst: 100
-#         average: 50
-
-#     # CORS (if needed)
-#     cors:
-#       headers:
-#         accessControlAllowMethods:
-#           - GET
-#           - OPTIONS
-#           - PUT
-#           - POST
-#           - DELETE
-#         accessControlAllowOriginList:
-#           - "https://yourdomain.com"
-#         accessControlMaxAge: 100
-#         addVaryHeader: true
-
-# # TLS configuration
-# tls:
-#   options:
-#     default:
-#       sslProtocols:
-#         - "TLSv1.2"
-#         - "TLSv1.3"
-#       cipherSuites:
-#         - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
-#         - "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
-#         - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
-
-
-
-
-
-
-
-# dynamic.yml - Dynamic Configuration (LOCAL DEVELOPMENT VERSION)
-
-# HTTP configuration
 http:
-  # Routers define how incoming requests are matched and routed to services
-  routers:
-    # FastAPI application router
-    fastapi-local:
-      rule: "Host(`localhost`) || Host(`127.0.0.1`) || Host(`fastapi.local`)"
-      # FOR PRODUCTION: Change to your domain
-      # rule: "Host(`your-domain.com`) || Host(`api.your-domain.com`)"
-      
-      service: fastapi-service    # Which service to route to
-      entryPoints:
-        - web                     # Use HTTP entry point for local development
-        # FOR PRODUCTION: Change to websecure for HTTPS
-        # - websecure
-      
-      # FOR PRODUCTION: Uncomment for SSL
-      # tls:
-      #   certResolver: letsencrypt
-      
-      middlewares:
-        - security-headers-local  # Apply security headers
-        - rate-limit             # Apply rate limiting
-        # FOR PRODUCTION: Add more security middlewares
-        # - security-headers-prod
-
-    # Traefik dashboard router (accessible at localhost:8080)
-    traefik-dashboard:
-      rule: "Host(`localhost`) && PathPrefix(`/dashboard`) || Host(`localhost`) && PathPrefix(`/api`)"
-      # FOR PRODUCTION: Use separate subdomain and authentication
-      # rule: "Host(`traefik.your-domain.com`)"
-      
-      service: api@internal       # Built-in Traefik API service
-      entryPoints:
-        - traefik                 # Use dashboard entry point
-      
-      # FOR PRODUCTION: Uncomment for authentication and HTTPS
-      # middlewares:
-      #   - dashboard-auth
-      #   - security-headers-prod
-      # tls:
-      #   certResolver: letsencrypt
-
-  # Services define the backend servers that handle requests
-  services:
-    fastapi-service:
-      loadBalancer:
-        servers:
-          - url: "http://fastapi:8000"    # FastAPI container URL (container name:port)
-        
-        # Health check configuration
-        healthCheck:
-          path: "/api/v1/health"          # Health check endpoint in your FastAPI app
-          interval: "30s"                 # Check every 30 seconds
-          timeout: "10s"                  # 10 second timeout
-          headers:
-            Host: "localhost"             # Host header for health checks
-        
-        # Session affinity (sticky sessions) - optional
-        sticky:
-          cookie:
-            name: "traefik-fastapi"       # Cookie name for sticky sessions
-            secure: false                 # Set to true for HTTPS in production
-            httpOnly: true               # Prevent JavaScript access to cookie
-
-  # Middlewares provide additional processing of requests
   middlewares:
-    # Security headers for local development (relaxed)
-    security-headers-local:
+    # Security headers
+    security-headers:
       headers:
-        browserXssFilter: true                    # Enable XSS protection
-        contentTypeNosniff: true                  # Prevent MIME type sniffing
-        frameDeny: true                          # Prevent embedding in frames
-        referrerPolicy: "same-origin"            # Relaxed referrer policy for local
-        customRequestHeaders:
-          X-Forwarded-Proto: "http"              # Set protocol header
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: "same-origin"
         customResponseHeaders:
-          Server: ""                             # Hide server information
-
-    # FOR PRODUCTION: Strict security headers
-    # security-headers-prod:
-    #   headers:
-    #     browserXssFilter: true
-    #     contentTypeNosniff: true
-    #     forceSTSHeader: true                   # Force HTTPS
-    #     frameDeny: true
-    #     referrerPolicy: "strict-origin-when-cross-origin"
-    #     stsIncludeSubdomains: true             # HTTPS for all subdomains
-    #     stsPreload: true                       # HTTPS preload list
-    #     stsSeconds: 31536000                   # HTTPS max age (1 year)
-    #     customRequestHeaders:
-    #       X-Forwarded-Proto: "https"
-    #     customResponseHeaders:
-    #       X-Robots-Tag: "noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
-    #       Server: ""
+          Server: ""
 
     # Rate limiting to prevent abuse
     rate-limit:
       rateLimit:
-        burst: 100                # Allow burst of 100 requests
-        average: 50               # Average 50 requests per period
-        period: "1m"              # Per minute
+        average: 50
+        burst: 100
+        period: "1m"
         sourceCriterion:
           ipStrategy:
-            depth: 1              # Use first IP in X-Forwarded-For chain
+            depth: 1
 
-    # CORS middleware (Cross-Origin Resource Sharing)
-    cors-local:
-      headers:
-        accessControlAllowMethods:
-          - "GET"
-          - "POST" 
-          - "PUT"
-          - "DELETE"
-          - "OPTIONS"
-          - "PATCH"
-        accessControlAllowOriginList:
-          - "http://localhost:3000"          # Frontend dev server
-          - "http://localhost:8080"          # Alternative frontend port
-          - "http://127.0.0.1:3000"
-        # FOR PRODUCTION: Restrict to your actual domains
-        # accessControlAllowOriginList:
-        #   - "https://your-domain.com"
-        #   - "https://www.your-domain.com"
-        accessControlAllowHeaders:
-          - "Content-Type"
-          - "Authorization"
-          - "X-Requested-With"
-          - "Accept"
-          - "Origin"
-        accessControlExposeHeaders:
-          - "Content-Length"
-          - "X-Total-Count"
-        accessControlAllowCredentials: true
-        accessControlMaxAge: 86400           # 24 hours
-
-    # Basic authentication for dashboard (FOR PRODUCTION)
-    # Generate password with: echo $(htpasswd -nbB admin your-password) | sed -e s/\\$/\\$\\$/g
-    # dashboard-auth:
-    #   basicAuth:
-    #     users:
-    #       - "admin:$2y$10$your-bcrypt-hashed-password-here"
-
-    # Compression middleware
+    # Compression
     compression:
-      compress: {}                           # Enable gzip compression
-
-    # Strip prefix middleware (useful for API versioning)
-    strip-api-prefix:
-      stripPrefix:
-        prefixes:
-          - "/api"                          # Remove /api from path before forwarding
-
-    # Add prefix middleware
-    add-api-prefix:
-      addPrefix:
-        prefix: "/api/v1"                   # Add prefix to path
-
-    # Request/response size limits
-    buffering:
-      maxRequestBodyBytes: 10485760         # 10MB max request body
-      maxResponseBodyBytes: 10485760        # 10MB max response body
-      memRequestBodyBytes: 2097152          # 2MB in memory before disk
-      memResponseBodyBytes: 2097152         # 2MB in memory before disk
-
-# TCP configuration (for non-HTTP services like databases)
-tcp:
-  routers: {}
-  services: {}
-
-# UDP configuration (for UDP services)  
-udp:
-  routers: {}
-  services: {}
+      compress: {}

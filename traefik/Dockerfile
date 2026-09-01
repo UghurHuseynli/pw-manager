@@ -1,24 +1,28 @@
 # Use official Traefik image as base
-FROM traefik:v3.4
+# NOTE: pin >= v3.6.1 — earlier releases hardcode Docker API v1.24 in the
+# docker provider, which Docker Engine 29+ rejects outright (MinAPIVersion
+# 1.44). v3.6+ auto-negotiates the API version instead.
+# https://github.com/traefik/traefik/issues/12253
+FROM traefik:v3.6
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S traefik && \
-    adduser -u 1001 -D -S -G traefik traefik
+# Runs as root (the image default): Traefik needs read access to the
+# host's /var/run/docker.sock to use the Docker provider, and that
+# socket is not readable by an unprivileged container user without
+# extra host-side group wrangling or a socket-proxy sidecar.
 
-# Create necessary directories with proper permissions
+# Create necessary directories
 RUN mkdir -p /etc/traefik/dynamic \
              /var/log/traefik \
-             /data/traefik && \
-    chown -R traefik:traefik /etc/traefik /var/log/traefik /data/traefik
+             /data/traefik
 
-# Copy static configuration 
-COPY --chown=traefik:traefik traefik.yml /etc/traefik/traefik.yml
+# Copy static configuration
+COPY traefik.yml /etc/traefik/traefik.yml
 
 # Copy dynamic configuration (optional)
-COPY --chown=traefik:traefik dynamic.yml/ /etc/traefik/dynamic/
+COPY dynamic.yml/ /etc/traefik/dynamic/
 
 # Copy certificates if using custom SSL (optional)
-# COPY --chown=traefik:traefik certs/ /etc/traefik/certs/
+# COPY certs/ /etc/traefik/certs/
 
 # Install curl for health checks
 RUN apk add --no-cache curl
@@ -26,9 +30,6 @@ RUN apk add --no-cache curl
 # Health check
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/ping || exit 1
-
-# Switch to non-root user
-USER traefik
 
 # Expose ports
 EXPOSE 80 443 8080

@@ -1,9 +1,11 @@
+import uuid
+from datetime import timedelta
 from unittest.mock import patch
 from sqlmodel import Session, select
 from fastapi.testclient import TestClient
 from app.core.config import settings
 from app.tests.utils.utils import random_email, random_lower_string
-from app.core.security import verify_password
+from app.core.security import create_access_token, verify_password
 from app.db.users import User
 from app.utils import generate_reset_token
 
@@ -25,6 +27,43 @@ def test_get_users_me_wrong_token(
     r = client.get(f"{settings.API_V1_STR}/users/me", headers=wrong_token_headers)
     assert r.status_code == 403
     assert r.json() == {"detail": "Could not validate credentials"}
+
+
+def test_get_users_me_user_not_found(client: TestClient) -> None:
+    token = create_access_token(subject=uuid.uuid4(), expires_delta=timedelta(minutes=5))
+    headers = {"Authorization": f"Bearer {token}"}
+    r = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
+    response = r.json()
+
+    assert r.status_code == 404
+    assert response["detail"] == "User not found"
+
+
+def test_get_users_me_inactive_user(client: TestClient, db: Session) -> None:
+    with (
+        patch("app.utils.send_email", return_value=None),
+        patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
+        patch("app.core.config.settings.SMTP_USER", "admin@example.com"),
+    ):
+        email = random_email()
+        username = random_lower_string()
+        password = random_lower_string()
+        data = {"email": email, "username": username, "password": password}
+        client.post(f"{settings.API_V1_STR}/users/signup", json=data)
+
+        user_query = select(User).where(User.email == email)
+        db_user = db.exec(user_query).first()
+        assert db_user.is_active is False
+
+        token = create_access_token(
+            subject=db_user.id, expires_delta=timedelta(minutes=5)
+        )
+        headers = {"Authorization": f"Bearer {token}"}
+        r = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
+        response = r.json()
+
+        assert r.status_code == 400
+        assert response["detail"] == "Inactive user"
 
 
 def test_register_and_activate_users(client: TestClient, db: Session) -> None:
@@ -64,6 +103,30 @@ def test_register_and_activate_users(client: TestClient, db: Session) -> None:
         assert activated_user["is_active"] is True
 
 
+def test_activate_user_invalid_token(client: TestClient) -> None:
+    r = client.post(
+        f"{settings.API_V1_STR}/users/activate?token={random_lower_string()}"
+    )
+    response = r.json()
+
+    assert r.status_code == 400
+    assert (
+        response["detail"]
+        == "Invalid token. Please request a new password recovery email."
+    )
+
+
+def test_activate_user_email_not_found(client: TestClient) -> None:
+    token = generate_reset_token(email=random_email())
+    r = client.post(f"{settings.API_V1_STR}/users/activate?token={token}")
+    response = r.json()
+
+    assert r.status_code == 404
+    assert (
+        response["detail"] == "The user with this email does not exist in the system."
+    )
+
+
 def test_register_with_existing_email(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
@@ -94,6 +157,11 @@ def test_enable_otp(
 def test_disable_otp(
     client: TestClient, db: Session, normal_user_token_headers: dict[str, str]
 ) -> None:
+    # Enable first, so disabling actually exercises the is_otp=True branch.
+    client.post(
+        f"{settings.API_V1_STR}/users/2fa/enable", headers=normal_user_token_headers
+    )
+
     r = client.post(
         f"{settings.API_V1_STR}/users/2fa/disable", headers=normal_user_token_headers
     )
@@ -101,6 +169,10 @@ def test_disable_otp(
 
     assert r.status_code == 200
     assert response["message"] == "Multi-factor authentication is disabled."
+
+    user_query = select(User).where(User.email == settings.TEST_USER_EMAIL)
+    db_user = db.exec(user_query).first()
+    assert db_user.is_otp is False
 
 
 def test_change_password_with_old_password(
@@ -225,3 +297,15 @@ def test_delete_user_me(
     statement = select(User).where(User.email == settings.TEST_USER_EMAIL)
     deleted_user = db.exec(statement).first()
     assert deleted_user is None
+
+
+def test_delete_user_me_superuser_forbidden(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/me", headers=superuser_token_headers
+    )
+    response = r.json()
+
+    assert r.status_code == 403
+    assert response["detail"] == "Super users are not allowed to delete themselves"

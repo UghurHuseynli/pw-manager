@@ -1,41 +1,13 @@
 services:
-  traefik:
-    image: traefik:v3.4
-    container_name: traefik
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=traefik-network"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--log.level=DEBUG"
-      - "--accesslog=true"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - traefik-network
-
-  fastapi-app:
+  app:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: fastapi-app
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fastapi-app.rule=Host(`localhost`)"
-      - "traefik.http.routers.fastapi-app.entrypoints=web"
-      - "traefik.http.services.fastapi-app.loadbalancer.server.port=8000"
-      - "traefik.http.routers.fastapi-app.service=fastapi-app"
-    networks:
-      - traefik-network
-    env_file:
-      - .env
-
-networks:
-  traefik-network:
-    external: true
+      target: dev
+    container_name: pw-manager-app-dev
+    restart: "no"
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+    environment:
+      POSTGRES_SERVER: db
+    ports:
+      - "8000:8000"

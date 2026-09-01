@@ -34,6 +34,22 @@ def test_get_credentials_by_user_id(
     assert 200 <= r.status_code < 300
 
 
+def test_get_credentials_filtered_by_user_id(
+    client: TestClient,
+    credential: Credentials,
+    superuser_token_headers: dict[str, str],
+) -> None:
+    r = client.get(
+        f"{settings.API_V1_STR}/admin/credentials/?user_id={credential.user_id}",
+        headers=superuser_token_headers,
+    )
+    credentials_response = r.json()
+
+    assert r.status_code == 200
+    assert credentials_response["count"] == 1
+    assert credentials_response["data"][0]["id"] == str(credential.id)
+
+
 def test_get_credential_by_id(
     client: TestClient,
     credential: Credentials,

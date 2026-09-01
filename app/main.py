@@ -31,7 +31,7 @@ app.include_router(
     prefix=settings.API_V1_STR,
 )
 
-if __name__ == "main":
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",

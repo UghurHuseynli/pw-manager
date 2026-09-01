@@ -1,54 +1,38 @@
 services:
-  traefik:
-    build:
-      context: ./traefik
-      dockerfile: Dockerfile
-    container_name: traefik-prod
+  db:
+    image: postgres:16-alpine
+    container_name: pw-manager-db
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      # For Let's Encrypt certificates
-      - traefik-data:/data/traefik
-      # For logs
-      - traefik-logs:/var/log/traefik
-    environment:
-      - TRAEFIK_LOG_LEVEL=INFO
-    networks:
-      - traefik-network
-    labels:
-      # Watchtower auto-update (optional)
-      - "com.centurylinklabs.watchtower.enable=true"
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  fastapi-app:
-    build: .
-    container_name: fastapi-app-prod
+  app:
+    build:
+      context: .
+      target: prod
+    container_name: pw-manager-app
     restart: unless-stopped
-    environment:
-      - ENV=production
     env_file:
       - .env
-    networks:
-      - traefik-network
-    # Health check at Docker level (optional, since Traefik has its own)
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    labels:
-      # Watchtower auto-update (optional)
-      - "com.centurylinklabs.watchtower.enable=true"
+    environment:
+      # Compose network DNS name of the db service above, overriding
+      # whatever POSTGRES_SERVER is set to in .env (which can stay
+      # "localhost" for running the app outside Docker).
+      POSTGRES_SERVER: db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
 
 volumes:
-  traefik-data:
-    driver: local
-  traefik-logs:
-    driver: local
-
-networks:
-  traefik-network:
-    driver: bridge
+  db-data:
