@@ -61,7 +61,7 @@ def activate_user(*, session: SessionDep, token: str) -> Any:
     email = verify_reset_token(token=token)
     if not email:
         raise HTTPException(
-            status=400,
+            status_code=400,
             detail="Invalid token. Please request a new password recovery email.",
         )
     user = crud_users.get_user_by_email(session=session, email=email)

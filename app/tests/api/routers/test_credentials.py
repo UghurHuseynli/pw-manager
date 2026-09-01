@@ -3,6 +3,7 @@ import uuid
 from fastapi.testclient import TestClient
 from app.tests.utils.utils import random_email, random_lower_string
 from app.core.config import settings
+from app.core.security import decrypt_credential_password
 from app.crud import credentials as crud_credentials
 from app.db.credentials import Credentials
 
@@ -114,6 +115,37 @@ def test_update_credential_not_found(
         f"{settings.API_V1_STR}/credentials/{fake_id}",
         headers=normal_user_token_headers,
         json=data,
+    )
+    response = r.json()
+
+    assert r.status_code == 404
+    assert response["detail"] == "Credential not found"
+
+
+def test_show_password(
+    client: TestClient,
+    credential: Credentials,
+    normal_user_token_headers: dict[str, str],
+) -> None:
+    r = client.get(
+        f"{settings.API_V1_STR}/credentials/{credential.id}/show-password",
+        headers=normal_user_token_headers,
+    )
+    response = r.json()
+
+    assert r.status_code == 200
+    assert response["password"] == decrypt_credential_password(
+        credential.hashed_password
+    )
+
+
+def test_show_password_not_found(
+    client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
+    fake_id = uuid.uuid4()
+    r = client.get(
+        f"{settings.API_V1_STR}/credentials/{fake_id}/show-password",
+        headers=normal_user_token_headers,
     )
     response = r.json()
 

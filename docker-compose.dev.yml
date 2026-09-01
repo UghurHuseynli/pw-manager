@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      target: dev
+    container_name: pw-manager-app-dev
+    restart: "no"
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+    environment:
+      POSTGRES_SERVER: db
+    ports:
+      - "8000:8000"

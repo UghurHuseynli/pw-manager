@@ -1,0 +1,31 @@
+# Dynamic configuration for Traefik.
+#
+# Routers and services for the app come from Docker labels
+# (see docker-compose.traefik.yml) — this file only holds reusable
+# middlewares that those labels can reference.
+
+http:
+  middlewares:
+    # Security headers
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: "same-origin"
+        customResponseHeaders:
+          Server: ""
+
+    # Rate limiting to prevent abuse
+    rate-limit:
+      rateLimit:
+        average: 50
+        burst: 100
+        period: "1m"
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # Compression
+    compression:
+      compress: {}

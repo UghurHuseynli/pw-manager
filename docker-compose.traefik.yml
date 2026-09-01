@@ -1,0 +1,32 @@
+services:
+  app:
+    ports: !override []
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`localhost`)"
+      - "traefik.http.routers.app.entrypoints=web"
+      - "traefik.http.services.app.loadbalancer.server.port=8000"
+      - "traefik.http.routers.app.service=app"
+      - "traefik.http.routers.app.middlewares=security-headers@file,rate-limit@file"
+    networks:
+      - default
+      - traefik-network
+
+  traefik:
+    build:
+      context: ./traefik
+    container_name: pw-manager-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-network
+
+networks:
+  traefik-network:
+    name: traefik-network
+    driver: bridge

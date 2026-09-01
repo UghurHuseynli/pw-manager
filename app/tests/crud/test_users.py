@@ -72,6 +72,23 @@ def test_not_authenticate_user(db: Session) -> None:
     assert authenticated_user is None
 
 
+def test_authenticate_user_wrong_password(db: Session) -> None:
+    email = random_email()
+    password = random_lower_string()
+    username = random_lower_string()
+
+    user_in = UserCreate(
+        username=username,
+        email=email,
+        password=password,
+    )
+    crud_users.create_user(session=db, user_create=user_in)
+    authenticated_user = crud_users.authenticate(
+        session=db, email=email, password=random_lower_string()
+    )
+    assert authenticated_user is None
+
+
 def test_user_is_active(db: Session) -> None:
     email = random_email()
     password = random_lower_string()

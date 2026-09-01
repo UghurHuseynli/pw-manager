@@ -224,6 +224,13 @@ def test_disable_otp(
     email = settings.TEST_USER_EMAIL
     statement = select(User).where(User.email == email)
     db_user = db.exec(statement).first()
+
+    # Enable first, so disabling actually exercises the is_otp=True branch.
+    client.post(
+        f"{settings.API_V1_STR}/admin/users/2fa/enable/{db_user.id}",
+        headers=superuser_token_headers,
+    )
+
     r = client.post(
         f"{settings.API_V1_STR}/admin/users/2fa/disable/{db_user.id}",
         headers=superuser_token_headers,
@@ -231,6 +238,8 @@ def test_disable_otp(
     response = r.json()
 
     assert r.status_code == 200
+    db.refresh(db_user)
+    assert db_user.is_otp is False
     assert response["message"] == "Multi-factor authentication is disabled."
 
 

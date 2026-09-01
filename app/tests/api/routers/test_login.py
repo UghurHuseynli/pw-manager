@@ -64,6 +64,40 @@ def test_get_access_token_inactive_user(client: TestClient, db: Session):
         assert response["detail"] == "Inactive user"
 
 
+def test_get_access_token_missing_otp(
+    client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
+    client.post(
+        f"{settings.API_V1_STR}/users/2fa/enable", headers=normal_user_token_headers
+    )
+
+    email = settings.TEST_USER_EMAIL
+    password = settings.TEST_USER_PASSWORD
+    data = {"username": email, "password": password}
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=data)
+    response = r.json()
+
+    assert r.status_code == 401
+    assert response["detail"] == "Invalid or missing OTP"
+
+
+def test_get_access_token_wrong_otp(
+    client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
+    client.post(
+        f"{settings.API_V1_STR}/users/2fa/enable", headers=normal_user_token_headers
+    )
+
+    email = settings.TEST_USER_EMAIL
+    password = settings.TEST_USER_PASSWORD
+    data = {"username": email, "password": password, "otp": "000000"}
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=data)
+    response = r.json()
+
+    assert r.status_code == 401
+    assert response["detail"] == "Invalid or missing OTP"
+
+
 def test_password_recovery_with_wrong_email(client: TestClient) -> None:
     email = random_email()
 
