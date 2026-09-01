@@ -1,7 +1,8 @@
-from sqlmodel import SQLModel, Field, Relationship, Column, TIMESTAMP, func
+from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, timezone
 from pydantic import EmailStr
 import uuid
+from typing import TYPE_CHECKING
 
 
 class UserBase(SQLModel):
@@ -82,4 +83,5 @@ class UserSignUpResponse(UserPublic):
     )
 
 
-from app.db.credentials import Credentials
+if TYPE_CHECKING:
+    from app.db.credentials import Credentials

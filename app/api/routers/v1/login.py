@@ -2,7 +2,6 @@ from app.api.dependencies import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from typing import Annotated
 from datetime import timedelta
-from fastapi.security import OAuth2PasswordRequestForm
 import pyotp
 from datetime import datetime, timezone
 from app.crud.users import authenticate, get_user_by_email

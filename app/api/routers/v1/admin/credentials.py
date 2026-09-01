@@ -9,7 +9,6 @@ from app.db.credentials import (
     Credentials,
     CredentialAdminDetail,
 )
-from app.schemas.credentials import Password
 from app.schemas.users import Message
 from app.crud import credentials as crud_credentials
 from uuid import UUID

@@ -19,6 +19,7 @@ dependencies = [
     "pytest>=8.3.5",
     "python-jose>=3.4.0",
     "qrcode[pil]>=8.2",
+    "ruff>=0.11.13",
     "sqlmodel>=0.0.24",
 ]
 
@@ -26,3 +27,7 @@ dependencies = [
 dev = [
     "ruff>=0.11.7",
 ]
+
+[tool.ruff]
+per-file-ignores = { "alembic/env.py" = ["F401"] }
+exclude = ["versions"]

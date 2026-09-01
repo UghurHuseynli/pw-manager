@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlmodel import Session
 import uuid
 from fastapi.testclient import TestClient
 from app.tests.utils.utils import random_email, random_lower_string

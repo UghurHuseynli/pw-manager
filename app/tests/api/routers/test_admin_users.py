@@ -1,4 +1,3 @@
-from unittest.mock import patch
 import uuid
 from sqlmodel import Session, select
 from fastapi.testclient import TestClient
@@ -6,7 +5,6 @@ from app.core.config import settings
 from app.tests.utils.utils import random_email, random_lower_string
 from app.core.security import verify_password
 from app.db.users import User
-from app.utils import generate_reset_token
 
 
 def test_read_users(

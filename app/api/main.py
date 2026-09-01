@@ -7,3 +7,10 @@ api_router.include_router(users.router)
 api_router.include_router(login.router)
 api_router.include_router(credentials.router)
 api_router.include_router(admin.admin_router)
+
+@api_router.get("/health")
+def health_check() -> dict:
+    """
+    Health check endpoint to verify the API is running.
+    """
+    return {"status": "ok"}

@@ -1,6 +1,6 @@
 from fastapi.encoders import jsonable_encoder
 from sqlmodel import Session
-from app.db.users import User, UserCreate, UserUpdate, UserUpdateMe
+from app.db.users import User, UserCreate, UserUpdateMe
 from app.tests.utils.utils import random_lower_string, random_email
 from app.crud import users as crud_users
 
@@ -53,7 +53,7 @@ def test_authenticate_user(db: Session) -> None:
         email=email,
         password=password,
     )
-    user = crud_users.create_user(session=db, user_create=user_in)
+    crud_users.create_user(session=db, user_create=user_in)
     authenticated_user = crud_users.authenticate(
         session=db, email=email, password=password
     )

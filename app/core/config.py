@@ -1,7 +1,16 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import PostgresDsn, computed_field, EmailStr, model_validator
+from pydantic import PostgresDsn, computed_field, EmailStr, model_validator, AnyUrl, BeforeValidator
 from pydantic_core import MultiHostUrl
 from typing_extensions import Self
+from typing import Any, Annotated
+
+
+def parse_cors(v: Any) -> list[str] | str:
+    if isinstance(v, str) and not v.startswith("["):
+        return [i.strip() for i in v.split(",")]
+    elif isinstance(v, list | str):
+        return v
+    raise ValueError(v)
 
 
 class Settings(BaseSettings):
@@ -22,6 +31,17 @@ class Settings(BaseSettings):
 
     FRONTEND_URL: str
 
+    BACKEND_CORS_ORIGINS: Annotated[
+        list[AnyUrl] | str, BeforeValidator(parse_cors)
+    ] = []
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def all_cors_origins(self) -> list[str]:
+        return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
+            self.FRONTEND_URL
+        ]
+    
     # Database settings
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
