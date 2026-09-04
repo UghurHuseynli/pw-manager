@@ -62,6 +62,7 @@ class UserPublic(SQLModel):
     email: EmailStr
     is_active: bool
     is_otp: bool
+    is_superuser: bool
 
 
 class UsersPublic(SQLModel):

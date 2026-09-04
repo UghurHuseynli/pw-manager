@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Static fallback (dark) values — the real, reactive values are applied at
+   runtime by the root layout via nativewind's vars(), based on the user's
+   theme preference. This block only matters before that first render. */
+:root {
+  --color-app: 11 11 16;
+  --color-card: 22 22 31;
+  --color-card-alt: 28 28 40;
+  --color-line: 35 35 48;
+  --color-ink: 244 244 247;
+  --color-subtle: 139 139 149;
+  --color-accent: 124 108 255;
+  --color-accent-soft: 42 36 82;
+  --color-success: 52 211 153;
+  --color-danger: 248 113 113;
+  --color-warning: 251 191 36;
+}

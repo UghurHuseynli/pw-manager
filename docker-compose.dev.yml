@@ -1,13 +1,20 @@
 services:
+  db:
+    env_file: !override
+      - .env.dev
+
   app:
     build:
       target: dev
     container_name: pw-manager-app-dev
     restart: "no"
+    env_file: !override
+      - .env.dev
     volumes:
       - ./app:/app/app
       - ./alembic:/app/alembic
     environment:
       POSTGRES_SERVER: db
+      ENVIRONMENT: dev
     ports:
       - "8000:8000"

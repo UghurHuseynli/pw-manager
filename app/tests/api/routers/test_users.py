@@ -17,6 +17,7 @@ def test_get_users_me(
     current_user = r.json()
     assert current_user
     assert current_user["is_active"] is True
+    assert current_user["is_superuser"] is False
     assert current_user["email"] == settings.TEST_USER_EMAIL
 
 

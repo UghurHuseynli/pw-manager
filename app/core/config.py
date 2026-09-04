@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import (
     PostgresDsn,
@@ -9,7 +10,7 @@ from pydantic import (
 )
 from pydantic_core import MultiHostUrl
 from typing_extensions import Self
-from typing import Any, Annotated
+from typing import Any, Annotated, Literal
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -20,15 +21,21 @@ def parse_cors(v: Any) -> list[str] | str:
     raise ValueError(v)
 
 
+ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
+
+
 class Settings(BaseSettings):
     """Configuration settings for the application."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=f".env.{ENVIRONMENT}",
         env_file_encoding="utf-8",
         env_ignore_empty=True,
         extra="ignore",
     )
+
+    ENVIRONMENT: Literal["dev", "test", "prod"] = ENVIRONMENT  # type: ignore[assignment]
+
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "PW-Manager"
     # JWT settings
