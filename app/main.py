@@ -8,8 +8,6 @@ from starlette.middleware.cors import CORSMiddleware
 def custom_generate_unique_id(route: APIRoute) -> str:
     tag = route.tags[0] if route.tags else "default"
     return f"{tag}-{route.name}"
-    return f"{route.tags[0]}-{route.name}"
-
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
